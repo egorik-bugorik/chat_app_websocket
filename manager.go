@@ -1,6 +1,7 @@
 package main
 
 import (
+	errors "errors"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -13,16 +14,34 @@ var websocketUpgrader = websocket.Upgrader{
 }
 
 type Manager struct {
-	clients ClientList
-	mu      sync.RWMutex
+	clients  ClientList
+	mu       sync.RWMutex
+	handlers map[string]EventHandler
 }
 
 func NewManager() *Manager {
-	return &Manager{
-		clients: make(ClientList),
+	m := &Manager{
+		clients:  make(ClientList),
+		handlers: make(map[string]EventHandler),
 	}
+	m.setupEventHandlers()
+
+	return m
 }
 
+func (m *Manager) routeHandler(event Event, c *Client) error {
+
+	if handler, ok := m.handlers[event.Type]; ok {
+		if err := handler(event, c); err != nil {
+			return err
+		}
+		return nil
+	} else {
+		return errors.New("Therer is no such event!!!")
+
+	}
+
+}
 func (m *Manager) serverWS(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("Inner conenction ")
@@ -60,5 +79,15 @@ func (m *Manager) removeClient(client *Client) {
 		delete(m.clients, client)
 	}
 	m.clients[client] = true
+
+}
+
+func (m *Manager) setupEventHandlers() {
+	m.handlers[EventSendMessage] = sendMessage
+}
+
+func sendMessage(event Event, c *Client) error {
+	log.Println("Message ::: ", event)
+	return nil
 
 }
