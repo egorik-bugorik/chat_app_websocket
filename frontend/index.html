@@ -39,6 +39,39 @@
     var selectedChat = "general";
 
 
+
+    class Event{
+        constructor(type,payload) {
+
+            this.type  = type;
+            this.payload  = payload;
+        }
+    }
+
+
+    function routeEvent(event){
+
+        if (event.type === undefined){
+            alert("this event has no TYPE field!!!");
+        }
+        switch (event.type){
+            case "new_message":
+                console.log("new message");
+                break;
+            default:
+                alert("unknown event type !!!");
+                break;
+
+        }
+
+    }
+
+    function sendEvent(evName,payload){
+        const ev = new Event(evName,payload)
+        conn.send(JSON.stringify(ev))
+    }
+
+
     function rio(){
         console.log(conn)
     }
@@ -54,8 +87,7 @@
     function sendMessage() {
         var newMess = document.getElementById("message");
         if (newMess != null) {
-            console.log("sending...")
-            conn.send(newMess.value);
+          sendEvent("send_message",newMess.value)
 
         }
         return false;
@@ -71,8 +103,11 @@
 
             conn = new WebSocket("ws://" + document.location.host + "/ws");
 
-            conn.onmessage = function (event) {
-                console.log(event)
+            conn.onmessage = function (ev) {
+              const      eventData = JSON.parse(ev.data)
+                const event = Object.assign(new Event,eventData)
+
+                routeEvent(event)
 
             }
             console.log("done");
