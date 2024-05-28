@@ -10,6 +10,7 @@
 <div class="center">
     <h1>Amazing chat application</h1>
     <h3 id="chat-header">Currently in chat :general</h3>
+    <h3 id="connection-header">Connection to websocket:false</h3>
     <form id="chatroom-selection">
 
         <label for="chatroom"> CHatroom</label>
@@ -33,6 +34,21 @@
 
 
     </form>
+    <div style="border: 3px solid black;margin-top: 30px">
+        <form id="login-form">
+
+            <label for="username"> Username</label>
+
+            <input type="text" id="username" name="username"><br><br>
+            <label for="password"> Password</label>
+
+            <input type="password" id="password" name="password"><br><br>
+            <input type="submit" value="Login">
+
+
+        </form>
+    </div>
+
 </div>
 
 <script type="text/javascript">
@@ -96,17 +112,48 @@
 
     };
 
-    window.onload = function () {
-        document.getElementById("chatroom-selection").onsubmit = changeChatRoom;
-        document.getElementById("chatroom-message").onsubmit = sendMessage;
+    function login() {
+        let loginData = {
+            "username":document.getElementById("username").value,
+            "password":document.getElementById("password").value
+        }
 
+
+        fetch("login",{
+            method:"post",
+            mode:"cors",
+            body:JSON.stringify(loginData)
+
+
+        }).then((response)=>{
+            if(response.ok){
+return response.json()
+            }else{
+                throw 'unathorized'
+            }
+        }).then((data)=>{
+            connectWebsocker(data.otp)
+        }).catch((e)=>{alert(e)})
+        return false
+    }
+
+    function connectWebsocker(otp) {
         if (window["WebSocket"]) {
             console.log("Support websocket");
 
-            conn = new WebSocket("ws://" + document.location.host + "/ws");
+            conn = new WebSocket("ws://" + document.location.host + "/ws?otp=",otp);
 
+
+            conn.onopen = function (ev) {
+                document.getElementById("connection-header").innerHTML = "Connection to websocket:true"
+
+            }
+            conn.onclose = function (ev) {
+                document.getElementById("connection-header").innerHTML = "Connection to websocket:false"
+
+            }
             conn.onmessage = function (ev) {
-              const      eventData = JSON.parse(ev.data)
+                const      eventData = JSON.parse(ev.data)
                 const event = Object.assign(new Event,eventData)
 
                 routeEvent(event)
@@ -117,6 +164,14 @@
         } else {
             alert("Browser doesn't support websockket")
         }
+
+    }
+
+    window.onload = function () {
+        document.getElementById("chatroom-selection").onsubmit = changeChatRoom;
+        document.getElementById("chatroom-message").onsubmit = sendMessage;
+        document.getElementById("login-form").onsubmit = login;
+
     };
 
 

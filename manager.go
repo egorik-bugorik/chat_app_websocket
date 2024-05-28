@@ -9,8 +9,20 @@ import (
 )
 
 var websocketUpgrader = websocket.Upgrader{
+	CheckOrigin:     checkOrigin,
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+}
+
+func checkOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	switch origin {
+	case "http://localhost:9000":
+		return true
+	default:
+		return false
+
+	}
 }
 
 type Manager struct {
