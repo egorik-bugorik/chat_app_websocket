@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	errors "errors"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 	"sync"
+	"time"
 )
 
 var websocketUpgrader = websocket.Upgrader{
@@ -29,16 +32,58 @@ type Manager struct {
 	clients  ClientList
 	mu       sync.RWMutex
 	handlers map[string]EventHandler
+	otps     RetentionMap
 }
 
-func NewManager() *Manager {
+func NewManager(ctx context.Context) *Manager {
 	m := &Manager{
 		clients:  make(ClientList),
 		handlers: make(map[string]EventHandler),
+		otps:     NewRetentionMap(ctx, time.Second*4),
 	}
 	m.setupEventHandlers()
 
 	return m
+}
+
+func (m *Manager) loginHandler(w http.ResponseWriter, r *http.Request) {
+
+	type LoginRequest struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	var req LoginRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+
+	}
+	if req.Username == "gorik" && req.Password == "123" {
+		type Response struct {
+			Otp string `json:"otp"`
+		}
+
+		res := Response{Otp: m.otps.NewOtp().Key}
+		data, err := json.Marshal(res)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Println(err)
+
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(data)
+		if err != nil {
+			log.Println("error while writing data ::: ", err)
+			return
+		}
+
+	}
+	w.WriteHeader(http.StatusUnauthorized)
+
 }
 
 func (m *Manager) routeHandler(event Event, c *Client) error {
@@ -55,6 +100,19 @@ func (m *Manager) routeHandler(event Event, c *Client) error {
 
 }
 func (m *Manager) serverWS(w http.ResponseWriter, r *http.Request) {
+
+	otp := r.URL.Query().Get("otp")
+	if otp == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+
+	}
+
+	if !m.otps.VerifyOtp(otp) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+
+	}
 
 	log.Println("Inner conenction ")
 

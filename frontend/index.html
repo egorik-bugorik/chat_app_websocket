@@ -141,7 +141,7 @@ return response.json()
         if (window["WebSocket"]) {
             console.log("Support websocket");
 
-            conn = new WebSocket("ws://" + document.location.host + "/ws?otp=",otp);
+            conn = new WebSocket("ws://" + document.location.host + "/ws?otp="+otp);
 
 
             conn.onopen = function (ev) {
