@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	errors "errors"
+	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
@@ -157,7 +158,38 @@ func (m *Manager) setupEventHandlers() {
 }
 
 func sendMessage(event Event, c *Client) error {
-	log.Println("Message ::: ", event)
+
+	var sen SendMessageEvent
+
+	err := json.Unmarshal(event.Payload, &sen)
+	if err != nil {
+
+		return fmt.Errorf("coudln't unmarshal payload into sendMesgEv :::", err)
+
+	}
+
+	var broad NewMessageEvent
+
+	broad.Sent = time.Now()
+	broad.Message = sen.Message
+	broad.From = sen.From
+
+	data, err := json.Marshal(broad)
+	if err != nil {
+		return fmt.Errorf("coudln't marshal  newMsgEv:::", err)
+
+	}
+
+	outgoingEvent := Event{
+		Type:    EventNewMessage,
+		Payload: data,
+	}
+
+	for client := range c.manager.clients {
+
+		client.eggres <- outgoingEvent
+	}
+
 	return nil
 
 }

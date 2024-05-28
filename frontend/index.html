@@ -64,6 +64,20 @@
         }
     }
 
+    class SendMessageEvent{
+        constructor(from,message) {
+            this.message = message
+            this.from = from
+        }
+    }
+    class NewMessageEvent{
+        constructor(from,message,sent) {
+            this.message = message
+            this.from = from
+            this.sent = sent
+        }
+    }
+
 
     function routeEvent(event){
 
@@ -72,6 +86,9 @@
         }
         switch (event.type){
             case "new_message":
+
+                const mesEv = Object.assign(NewMessageEvent,event.payload)
+                appendCChatMessage(mesEv)
                 console.log("new message");
                 break;
             default:
@@ -80,6 +97,17 @@
 
         }
 
+    }
+
+    function appendCChatMessage(mesEvent){
+        var date  = new Date(mesEvent.sent)
+
+        console.log(mesEvent.sent)
+        const formattedMsg = `${date.toLocaleString()}:${mesEvent.message}`
+
+        textArea = document.getElementById("chatmessages");
+        textArea.innerHTML = textArea.innerHTML + '\n' + formattedMsg;
+        textArea.scrollTop = textArea.scrollHeight
     }
 
     function sendEvent(evName,payload){
@@ -104,8 +132,9 @@
         var newMess = document.getElementById("message");
         if (newMess != null) {
 
+            let outgoingEvent = new SendMessageEvent("gorik",newMess.value)
 
-          sendEvent("send_message",newMess.value)
+          sendEvent("send_message",outgoingEvent)
 
         }
         return false;
