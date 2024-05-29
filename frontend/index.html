@@ -78,6 +78,14 @@
         }
     }
 
+    class ChangeRoomEvent{
+        constructor(name) {
+            this.name= name;
+
+        }
+
+    }
+
 
     function routeEvent(event){
 
@@ -120,12 +128,20 @@
         console.log(conn)
     }
     function changeChatRoom() {
-        var newChat = document.getElementById("chatroom");
-        if (newChat != null && newChat.value != selectedChat) {
-            console.log(newChat);
-        }
-        return false;
+      var newChat = document.getElementById("chatroom")
 
+        if(newChat != null && newChat.value != selectedChat){
+
+            selectedChat = newChat.value
+            header = document.getElementById("chat-header").innerHTML = "currently in chat "+selectedChat;
+            let changeRoomEvent = new ChangeRoomEvent(selectedChat);
+            sendEvent("change_room",changeRoomEvent)
+
+            textArea= document.getElementById("chatmessages");
+            textArea.innerHTML = `You changerd chat to into ${selectedChat}`;
+
+        }
+        return false
     };
 
     function sendMessage() {

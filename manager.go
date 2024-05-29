@@ -155,6 +155,20 @@ func (m *Manager) removeClient(client *Client) {
 
 func (m *Manager) setupEventHandlers() {
 	m.handlers[EventSendMessage] = sendMessage
+	m.handlers[EventChangeRoom] = changeRoom
+}
+
+func changeRoom(event Event, c *Client) error {
+	var chRoom ChangeRoomEvent
+
+	err := json.Unmarshal(event.Payload, &chRoom)
+	if err != nil {
+
+		return fmt.Errorf("error while unmarshal changeRoom ::", err)
+	}
+
+	c.room = chRoom.Name
+	return nil
 }
 
 func sendMessage(event Event, c *Client) error {
@@ -186,8 +200,10 @@ func sendMessage(event Event, c *Client) error {
 	}
 
 	for client := range c.manager.clients {
+		if client.room == c.room {
 
-		client.eggres <- outgoingEvent
+			client.eggres <- outgoingEvent
+		}
 	}
 
 	return nil

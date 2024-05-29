@@ -21,6 +21,7 @@ type Message struct {
 type Client struct {
 	connection *websocket.Conn
 	manager    *Manager
+	room       string
 	eggres     chan Event
 }
 
